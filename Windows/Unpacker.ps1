@@ -32,6 +32,11 @@ function detectDefaultArchivers {
     }
 }
 
+
+<#
+.DESCRIPTION
+Function for check does the transferred file name match the extension with the file name that is contained in one of the paths of the standard archivers
+#>
 function isHashTableContainGivenFilename {
     param (
         [Parameter(Mandatory)]
@@ -49,6 +54,15 @@ function isHashTableContainGivenFilename {
     return $false
 }
 
+<#
+.SYNOPSIS
+Function for determining the path to the archiver that will process the files
+
+.DESCRIPTION
+Checks whether there is a file in the file system that has been transferred as a custom archiver and whether its name matches the name of any standard archiver from the hash table.
+
+If there is no file on the transmitted path or its name does not match the name of the standard archiver, the paths of the standard archivers will be checked and the first one that is on the disk will be used.
+#>
 function detectArchiver {
     param (
         [string]$archiverPath
@@ -90,6 +104,15 @@ function detectArchiver {
     }
 }
 
+<#
+.SYNOPSIS
+Function for replace symbols in given text using given process mode
+
+.DESCRIPTION
+It is assumed that this renaming will be used for the main/external folders in which the release files extracted from the main/external will be located.
+
+The function replaces dots, dashes and underscores with spaces, depending on the transmitted processing mode.
+#>
 function GetRenamedName {
     param (
         [Parameter(Mandatory)]
