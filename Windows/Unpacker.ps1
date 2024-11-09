@@ -1,7 +1,7 @@
 # Main script
 param (
     [string]$archiverPath,
-    [switch]$smartRename = $false,
+    [int]$smartRenameMode = 2,
     [switch]$deleteOriginal = $false,
     [string]$targetPath
 )
@@ -90,10 +90,64 @@ function detectArchiver {
     }
 }
 
+function GetRenamedName {
+    param (
+        [Parameter(Mandatory)]
+        [string]$filename,
+        [Parameter(Mandatory)]
+        [int]$renameMode
+    )
+    
+    if ($renameMode -eq 0) {
+        return $filename
+    }
+    
+    if ($renameMode -eq 3) {
+        return $filename.Replace('.', ' ').Replace('_', ' ').Replace('-', ' ')
+    }
+
+    $tempFilename = $filename
+    $startIndex = 0
+    
+    if (($renameMode -eq 1) -or ($renameMode -eq 2)) {
+        while ($true) {
+            $dotIndex = $tempFilename.IndexOf('.', $startIndex)
+    
+            if ($dotIndex -eq -1) {
+                break
+            }
+            $startIndex = $dotIndex + 1
+    
+            $leftSymbol = $tempFilename[$dotIndex - 1]
+            $rightSymbol = $tempFilename[$dotIndex + 1]
+    
+            if (($leftSymbol -match '^\d$') -and ($rightSymbol -match '^\d$')) {
+                continue
+            } else {
+                $tempFilename = $tempFilename.Substring(0, $dotIndex) + ' ' + $tempFilename.Substring($dotIndex + 1)
+            }        
+        }
+        
+        $lastDashIndex = $tempFilename.LastIndexOf('-')
+    
+        if ($renameMode -eq 1) {
+            $tempFilename = $tempFilename.Substring(0, $lastDashIndex) + ' ' + $tempFilename.Substring($lastDashIndex + 1)
+        }
+    
+        if ($renameMode -eq 2) {
+            $tempFilename = $tempFilename.Substring(0, $lastDashIndex) + ' [' + $tempFilename.Substring($lastDashIndex + 1) + ']'
+        }
+    }
+
+    return $tempFilename
+}
+
 
 try {
     $archiverWorkerPath = detectArchiver $archiverPath
+    $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     write-host "after $archiverWorkerPath"
+    write-host "after $renamedName"
 }
 catch {
     <#Do this if a terminating exception happens#>

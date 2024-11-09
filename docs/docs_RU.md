@@ -99,3 +99,75 @@ best.app.rar
    - То есть искать первую часть архива и передавать ее архиватору понадобится самостоятельно
 
 Суть скрипта, чтобы обработать все возможные нюансы и не тратить время на распаковку всех частей вручную.
+
+## Умное переименование
+
+Все названия архивов с релизами материала со сцен, которые я видел - не имеют пробелов. В качестве разделителя там либо точка, либо нижнее тире или подчеркивание.
+
+Например:
+```
+WE.ARE.FOOTBALL.2024.Season.2024.2025-SKIDROW
+Speedollama-rG
+Drova_Forsaken_Kin_MacOS-DINOByTES
+Safari.Pedals.Everything.Bundle.v2024.10.14.MacOS.UB.Incl.Keygen.VST-BTCR
+Valentina.Server.v14.6.0.Linux.x64.RPM.Incl.Keyfilemaker-CORE
+Rail.Route.Happy.Passengers.MacOS-I_KnoW
+```
+
+Я не знаю по какому принципу происходит именование архивов и папок с релизами, но точки и нижнее подчеркивание вместо пробелов между слов не всегда удобно. Поэтому в скрипте также есть функция "умное переименование", которая как раз будет заменять точки, тире и нижнее подчеркивание на пробелы или другие символы, там где это необходимо.
+
+Эта функция включается добавлением аргумента `-smartRename` и передачей ему цифры от 0 или более. Цифра обозначает версию режима переименования, который будет применяться.
+
+### Какие есть режимы переименования
+
+- 0 - без переименования
+- 1 - точки заменяются на пробелы только там, где с обеих сторон точки не цифры. Все нижние подчеркивания идущие по последнего тире - заменяются на пробелы. Последнее тире заменяется на пробелы
+
+Например
+```
+Safari.Pedals.Everything.Bundle.v2024.10.14.MacOS.UB.Incl.Keygen.VST-BTCR
+>
+Safari Pedals Everything Bundle v2024.10.14 MacOS UB Incl Keygen VST BTCR
+
+Drova_Forsaken_Kin_MacOS-DINOByTES
+>
+Drova Forsaken Kin MacOS DINOByTES
+
+Rail.Route.Happy.Passengers.MacOS-I_KnoW
+>
+Rail Route Happy Passengers MacOS I_KnoW
+```
+
+- 2 - тоже, что и версия 1, только текст после последнего тире будет заключен в квадратные скобки
+
+Например
+```
+Safari.Pedals.Everything.Bundle.v2024.10.14.MacOS.UB.Incl.Keygen.VST-BTCR
+>
+Safari Pedals Everything Bundle v2024.10.14 MacOS UB Incl Keygen VST [BTCR]
+
+Drova_Forsaken_Kin_MacOS-DINOByTES
+>
+Drova Forsaken Kin MacOS [DINOByTES]
+
+Rail.Route.Happy.Passengers.MacOS-I_KnoW
+>
+Rail Route Happy Passengers MacOS [I_KnoW]
+```
+
+- 3 - заменить вообще все точки, все тире и все нижние подчеркивания на пробелы
+
+Например
+```
+Safari.Pedals.Everything.Bundle.v2024.10.14.MacOS.UB.Incl.Keygen.VST-BTCR
+>
+Safari Pedals Everything Bundle v2024 10 14 MacOS UB Incl Keygen VST BTCR
+
+Drova_Forsaken_Kin_MacOS-DINOByTES
+>
+Drova Forsaken Kin MacOS DINOByTES
+
+Rail.Route.Happy.Passengers.MacOS-I_KnoW
+>
+Rail Route Happy Passengers MacOS I KnoW
+```
