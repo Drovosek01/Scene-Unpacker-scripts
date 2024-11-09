@@ -31,13 +31,15 @@ todo
 
 ## Системные требования
 
-todo
+Необходимо наличие исполняемых файлов одного из архиваторов, поддерживаемых скриптом, в папке со скриптом. Либо эти же архиваторы должны быть установленны по в стандартные папки в системе: 
 
 На macOS:
 - todo
 
 На Windows:
-- todo
+- 7-zip https://www.7-zip.org/
+- Bandizip https://www.bandisoft.com/bandizip/
+- WinRAR https://www.rarlab.com/download.htm
 
 На Linux:
 - todo
