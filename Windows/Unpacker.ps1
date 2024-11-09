@@ -1,10 +1,17 @@
 # Main script
 param (
     [string]$archiverPath,
-    [int]$smartRenameMode = 2,
+    [int]$smartRenameMode = 0,
     [switch]$deleteOriginal = $false,
+    [switch]$overwriteExisting = $false,
+    [Parameter(Mandatory)]
     [string]$targetPath
 )
+
+if (-not (Test-Path $targetPath)) {
+    Write-Error "Archive or folder for unpack not exist"
+    exit 1
+}
 
 
 # =====
@@ -18,6 +25,12 @@ $archiversDefaultPathes = @{
     'unrar' = 'C:\Program Files\WinRAR\UnRAR.exe'
 }
 
+$archiversTypes = @{
+    'sevenZip' = '7z';
+    'rar' = 'rar'
+}
+
+$targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
 
 # =====
 # FUNCTIONS
@@ -102,6 +115,35 @@ function detectArchiver {
     } else {
         return $archiverWorkerPath
     }
+}
+
+<#
+.SYNOPSIS
+Function for get and return archiver type based on archiver name
+
+.DESCRIPTION
+For different archivers need use different arguments. For example for output 
+in 7z.exe need use "-o{Directory}"
+but for rar.exe and unrar.exe need use "-op{Directory}"
+And we will change arguments based on archiver type
+#>
+function GetArchiverType {
+    param (
+        [Parameter(Mandatory)]
+        [string]$archiverPath
+    )
+
+    [string]$archiverFilename = [System.IO.Path]::GetFileName($archiverPath)
+    
+    if (($archiverFilename.Contains('7z')) -or ($archiverFilename.Contains('bz'))) {
+        return $archiversTypes.sevenZip
+    }
+    
+    if (($archiverFilename.ToLower()).Contains('rar')) {
+        return $archiversTypes.rar
+    }
+
+    $archiversTypes.sevenZip
 }
 
 <#
