@@ -20,14 +20,7 @@ if (-not (Test-Path $targetPath)) {
 
 $archiversDefaultPathes = @{
     '7z' = 'C:\Program Files\7-Zip\7z.exe';
-    'bz' = 'C:\Program Files\Bandizip\bz.exe';
-    'rar' = 'C:\Program Files\WinRAR\Rar.exe';
-    'unrar' = 'C:\Program Files\WinRAR\UnRAR.exe'
-}
-
-$archiversTypes = @{
-    'sevenZip' = '7z';
-    'rar' = 'rar'
+    'bz' = 'C:\Program Files\Bandizip\bz.exe'
 }
 
 $metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
@@ -120,35 +113,6 @@ function detectArchiver {
 
 <#
 .SYNOPSIS
-Function for get and return archiver type based on archiver name
-
-.DESCRIPTION
-For different archivers need use different arguments. For example for output 
-in 7z.exe need use "-o{Directory}"
-but for rar.exe and unrar.exe need use "-op{Directory}"
-And we will change arguments based on archiver type
-#>
-function GetArchiverType {
-    param (
-        [Parameter(Mandatory)]
-        [string]$archiverPath
-    )
-
-    [string]$archiverFilename = [System.IO.Path]::GetFileName($archiverPath)
-    
-    if (($archiverFilename.Contains('7z')) -or ($archiverFilename.Contains('bz'))) {
-        return $archiversTypes.sevenZip
-    }
-    
-    if (($archiverFilename.ToLower()).Contains('rar')) {
-        return $archiversTypes.rar
-    }
-
-    $archiversTypes.sevenZip
-}
-
-<#
-.SYNOPSIS
 Function for replace symbols in given text using given process mode
 
 .DESCRIPTION
@@ -235,9 +199,7 @@ function UnpackMainArchive {
         [Parameter(Mandatory)]
         [string]$archivePath,
         [Parameter(Mandatory)]
-        [string]$outputFolderPath,
-        [Parameter(Mandatory)]
-        [string]$archiverType
+        [string]$outputFolderPath
     )
     
     # temporary folder where the archive will be unpacked
@@ -252,13 +214,7 @@ function UnpackMainArchive {
     [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
     [void](New-Item -Path $unpackFolderPath -Force -ItemType Directory)
 
-    if ($archiverType -eq $archiversTypes.rar) {
-        [void](& $archiverWorkerPath x $archivePath -op"$unpackFolderPath")
-    }
-
-    if ($archiverType -eq $archiversTypes.sevenZip) {
-        [void](& $archiverWorkerPath x $archivePath -o"$unpackFolderPath")
-    }
+    [void](& $archiverWorkerPath x $archivePath -o"$unpackFolderPath")
 
     $itemsInUnpackedFolder = Get-ChildItem -Path $unpackFolderPath
     $foldersInUnpackedFolder = $itemsInUnpackedFolder | Where-Object { $_.PSIsContainer }
@@ -321,8 +277,31 @@ function HandleInternalsRelease {
         -not ($_.Extension -in $metadataFilesExtensions)
     }
 
-    write-host "filteredItems $filteredItems"
     [System.Collections.Generic.List[string]]$namesFirstParts = New-Object System.Collections.Generic.List[string]
+
+    write-host "folderPathWithItems $folderPathWithItems"
+    write-host "folderItems $folderItems"
+    write-host "filteredItems $filteredItems"
+    if ($filteredItems.Count -eq ($folderItems | Where-Object { $_.Name -match '\.zip$' }).Count) {
+        $unpackTempFolderPath = GetUniqRandomFolder $folderPathWithItems
+
+        [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
+
+        [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
+    }
+    # find first parts archives
+    # 1. все zip с разными именами
+    # 2. .part00.rar
+    # 3. .rar + .rXX
+    # маловероятные
+    # 4. .zip.XXX
+    # 5. .zip + .zXX
+    # 6. .tar.XXX
+    # 7. .gz.XXX
+    # 8. .7z.XXX
+    # 9. все rar с разными именами
+    # 10. все 7z с разными именами
+
 
 }
 
@@ -330,15 +309,14 @@ function HandleInternalsRelease {
 try {
     $archiverWorkerPath = detectArchiver $archiverPath
     # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
-    $archiverType = GetArchiverType $archiverWorkerPath
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
-
+    
 
 
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "it file"
         $parentFolder = Split-Path -Path $targetFullPath
-        UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder $archiverType
+        UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         # Write-Host "Это папка."
     }
