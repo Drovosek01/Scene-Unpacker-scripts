@@ -208,6 +208,26 @@ function GetRenamedName {
     return $tempFilename
 }
 
+<#
+.SYNOPSIS
+Function replace uniq random name for folder which can be created in the transferred folder
+#>
+function GetUniqRandomFolder {
+    param (
+        [Parameter(Mandatory)]
+        [string]$outputFolderPath
+    )
+    
+    while ($true) {
+        $randomName = [System.IO.Path]::GetRandomFileName()
+        $tempFolderPath = $outputFolderPath + '\' + $randomName
+        
+        if (-not (Test-Path $tempFolderPath)) {
+            return $tempFolderPath
+        }
+    }
+}
+
 function UnpackMainArchive {
     param (
         [Parameter(Mandatory)]
@@ -224,15 +244,7 @@ function UnpackMainArchive {
     $unpackTempFolderPath = ''
     $archiveName = [System.IO.Path]::GetFileNameWithoutExtension($archivePath)
     
-    while ($true) {
-        $randomName = [System.IO.Path]::GetRandomFileName()
-        $tempFolderPath = $outputFolderPath + '\' + $randomName
-        
-        if (-not (Test-Path $tempFolderPath)) {
-            $unpackTempFolderPath = $tempFolderPath
-            break
-        }
-    }
+    $unpackTempFolderPath = GetUniqRandomFolder $outputFolderPath
     
     # folder with archive name inside temp folder
     $unpackFolderPath = $unpackTempFolderPath + '\' + $archiveName
