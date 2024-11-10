@@ -30,6 +30,8 @@ $archiversTypes = @{
     'rar' = 'rar'
 }
 
+$metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
+
 $targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
 
 # =====
@@ -95,7 +97,6 @@ function detectArchiver {
             if (isHashTableContainGivenFilename $customArchiverFileName) {
                 $archiverWorkerPath = $archiverFullPath
                 Write-Host "Script support using given archiver!"
-                break
             } else {
                 Write-Host "Script not support using given archiver! Will search default archivers."
                 $archiverWorkerPath = detectDefaultArchivers
@@ -207,10 +208,128 @@ function GetRenamedName {
     return $tempFilename
 }
 
+function UnpackMainArchive {
+    param (
+        [Parameter(Mandatory)]
+        [string]$archiverWorkerPath,
+        [Parameter(Mandatory)]
+        [string]$archivePath,
+        [Parameter(Mandatory)]
+        [string]$outputFolderPath,
+        [Parameter(Mandatory)]
+        [string]$archiverType
+    )
+    
+    # temporary folder where the archive will be unpacked
+    $unpackTempFolderPath = ''
+    $archiveName = [System.IO.Path]::GetFileNameWithoutExtension($archivePath)
+    
+    while ($true) {
+        $randomName = [System.IO.Path]::GetRandomFileName()
+        $tempFolderPath = $outputFolderPath + '\' + $randomName
+        
+        if (-not (Test-Path $tempFolderPath)) {
+            $unpackTempFolderPath = $tempFolderPath
+            break
+        }
+    }
+    
+    # folder with archive name inside temp folder
+    $unpackFolderPath = $unpackTempFolderPath + '\' + $archiveName
+    
+    [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
+    [void](New-Item -Path $unpackFolderPath -Force -ItemType Directory)
+
+    if ($archiverType -eq $archiversTypes.rar) {
+        [void](& $archiverWorkerPath x $archivePath -op"$unpackFolderPath")
+    }
+
+    if ($archiverType -eq $archiversTypes.sevenZip) {
+        [void](& $archiverWorkerPath x $archivePath -o"$unpackFolderPath")
+    }
+
+    $itemsInUnpackedFolder = Get-ChildItem -Path $unpackFolderPath
+    $foldersInUnpackedFolder = $itemsInUnpackedFolder | Where-Object { $_.PSIsContainer }
+
+    if (($itemsInUnpackedFolder.Count -eq 1) -and ($foldersInUnpackedFolder.Count -eq 1)) {
+        $dotsCountArchiveName = ([regex]::Matches($archiveName, '\.')).Count
+        $dotsCountUnpackedFolderName = ([regex]::Matches($foldersInUnpackedFolder[0].Name, '\.')).Count
+
+        # TODO:
+        # To reduce the number of operations with the file system, we can look at the inside of the archive in advance
+        # for example, using the "7z.exe l archive.rar" command and determine whether we need to create a folder
+        # with the archive name before that, or such a folder already lies in the archive itself
+
+        if (($archiveName -eq $foldersInUnpackedFolder[0].Name) -or ($dotsCountUnpackedFolderName -gt $dotsCountArchiveName)) {
+            # Processing 2 naming options
+            # 1. If there is another folder with the same name in the created folder, then we extract this folder outside,
+            # and delete the created folder in order to save the metadata of the subfolder
+            # 2. If archive has less dots than folder inside archive root
+            # for exmaple in archive "FLARE-1918-MAC.rar" we have folder "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE"
+            # and folder name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" has more details about release and product
+            # therefore, we leave the folder with the name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" as the main release folder
+            $tempFolderName = "folderForDelete"
+            Rename-Item -Path $unpackFolderPath -NewName $tempFolderName
+            Move-Item -Path ($unpackTempFolderPath + '\' + $tempFolderName + '\' + $foldersInUnpackedFolder[0].Name) -Destination $unpackTempFolderPath
+            Remove-Item -Path ($unpackTempFolderPath + '\' + $tempFolderName)
+            $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].Name
+
+            if ($archiveName -eq $foldersInUnpackedFolder[0].Name) {
+                Write-Host "Archive and folder in archive root have same name"
+                Write-Host "- folder from root will replace folder with archive name"
+            } else {
+                Write-Host "Archive and folder in archive root have different name"
+                Write-Host "- folder name from root selected like base name"
+            }
+        } elseif ($dotsCountArchiveName -gt $dotsCountUnpackedFolderName) {
+            # If archive has more dots than folder inside archive root
+            # for exmaple in archive "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE.rar" we have folder "FLARE-1918-MAC"
+            # and folder name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" has more details about release and product
+            # therefore, we leave the folder with the name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" as the main release folder
+            Move-Item -Path $foldersInUnpackedFolder[0].FullName -Destination $unpackTempFolderPath
+            Remove-Item -Path $unpackFolderPath
+            Rename-Item -Path $foldersInUnpackedFolder[0].FullName -NewName $archiveName
+            $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].FullName
+            Write-Host "Archive and folder in archive root have different name"
+            Write-Host "- archive name selected like base name"
+        }
+    }
+
+    HandleInternalsRelease $unpackFolderPath
+}
+
+function HandleInternalsRelease {
+    param (
+        [Parameter(Mandatory)]
+        [string]$folderPathWithItems
+    )
+    
+    $folderItems = Get-ChildItem -Path $folderPathWithItems
+    $filteredItems = $folderItems | Where-Object { 
+        -not ($_.Extension -in $metadataFilesExtensions)
+    }
+
+    write-host "filteredItems $filteredItems"
+    [System.Collections.Generic.List[string]]$namesFirstParts = New-Object System.Collections.Generic.List[string]
+
+}
+
 
 try {
     $archiverWorkerPath = detectArchiver $archiverPath
+    # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
+    $archiverType = GetArchiverType $archiverWorkerPath
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
+
+
+
+    if (Test-Path -Path $targetFullPath -PathType Leaf) {
+        Write-Host "it file"
+        $parentFolder = Split-Path -Path $targetFullPath
+        UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder $archiverType
+    } elseif (Test-Path -Path $targetFullPath -PathType Container) {
+        # Write-Host "Это папка."
+    }
     write-host "after $archiverWorkerPath"
     write-host "after $renamedName"
 }
