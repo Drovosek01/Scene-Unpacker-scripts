@@ -38,8 +38,6 @@ todo
 
 На Windows:
 - 7-zip https://www.7-zip.org/
-- Bandizip https://www.bandisoft.com/bandizip/
-- WinRAR https://www.rarlab.com/download.htm
 
 На Linux:
 - todo

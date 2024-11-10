@@ -19,8 +19,7 @@ if (-not (Test-Path $targetPath)) {
 # =====
 
 $archiversDefaultPathes = @{
-    '7z' = 'C:\Program Files\7-Zip\7z.exe';
-    'bz' = 'C:\Program Files\Bandizip\bz.exe'
+    '7z' = 'C:\Program Files\7-Zip\7z.exe'
 }
 
 $metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
