@@ -2,7 +2,8 @@
 param (
     [string]$archiverPath,
     [int]$smartRenameMode = 0,
-    [switch]$deleteOriginal = $false,
+    [int]$deleteMode = 0,
+    [int]$duplicatesProcessModes = 1,
     [switch]$overwriteExisting = $false,
     [Parameter(Mandatory)]
     [string]$targetPath
@@ -242,7 +243,7 @@ function UnpackMainArchive {
             $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].Name
 
             if ($archiveName -eq $foldersInUnpackedFolder[0].Name) {
-                Write-Host "Archive and folder in archive root have same name"
+                Write-Host "Archive and folder in archive root have same name $archiveName"
                 Write-Host "- folder from root will replace folder with archive name"
             } else {
                 Write-Host "Archive and folder in archive root have different name"
@@ -265,6 +266,64 @@ function UnpackMainArchive {
     HandleInternalsRelease $unpackFolderPath
 }
 
+function RemoveDuplicateFiles {
+    param (
+        [Parameter(Mandatory)]
+        [string]$folderPathWithItems
+    )
+    
+    $files = Get-ChildItem -Path $folderPathWithItems -Recurse -File
+    
+    # force move meta-files without postfix _00, _01, _02 ... etc to start files collection
+    $patterns = $metadataFilesExtensions | ForEach-Object { "_\d+\$_$" }
+
+    $metaFilesAll = $files | Where-Object {
+        $file = $_
+        $metadataFilesExtensions | Where-Object { $file.Extension -in $_ }
+    }
+    $metaFilesNotBase = $metaFilesAll | Where-Object {
+        $file = $_
+        $patterns | Where-Object { $file.Name -match $_ }
+    }
+    $metaFilesBase = $metaFilesAll | Where-Object {
+        $file = $_
+        -not ($patterns | Where-Object { $file.Name -match $_ })
+    }
+    $metaFilesAll = $metaFilesBase + $metaFilesNotBase
+
+    $nonMetaFiles = $files | Where-Object { 
+        $file = $_
+        -not ($metadataFilesExtensions | Where-Object { $file.Extension -in $_ })
+    }
+
+    $sortedFiles = $metaFilesAll + $nonMetaFiles
+    $fileHashes = @{}
+    $duplicatesCounter = 0
+
+    foreach ($file in $sortedFiles) {
+        try {
+            $fileHash = Get-FileHash -Path $file.FullName -Algorithm MD5
+
+            if ($fileHashes.ContainsKey($fileHash.Hash)) {
+                # Write-Host "Remove duplicate: $($file.FullName)"
+                $duplicatesCounter += 1
+                Remove-Item -Path $file.FullName -Force
+            } else {
+                $fileHashes[$fileHash.Hash] = $file.FullName
+            }
+        }
+        catch {
+            Write-Host "Error while process file: $($file.FullName)"
+        }
+    }
+    
+    if ($duplicatesCounter -gt 0) {
+        Write-Host "Duplicates: found $duplicatesCounter and removed"
+    } else {
+        Write-Host "Duplicates: not found"
+    }
+}
+
 function HandleInternalsRelease {
     param (
         [Parameter(Mandatory)]
@@ -278,16 +337,19 @@ function HandleInternalsRelease {
 
     [System.Collections.Generic.List[string]]$namesFirstParts = New-Object System.Collections.Generic.List[string]
 
-    write-host "folderPathWithItems $folderPathWithItems"
-    write-host "folderItems $folderItems"
-    write-host "filteredItems $filteredItems"
     if ($filteredItems.Count -eq ($folderItems | Where-Object { $_.Name -match '\.zip$' }).Count) {
         $unpackTempFolderPath = GetUniqRandomFolder $folderPathWithItems
 
         [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
 
-        [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
+        if ($duplicatesProcessModes -eq 0) {
+            [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
+        } elseif ($duplicatesProcessModes -eq 1) {
+            [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
+            RemoveDuplicateFiles $folderPathWithItems
+        }
     }
+
     # find first parts archives
     # 1. все zip с разными именами
     # 2. .part00.rar
@@ -310,8 +372,6 @@ try {
     # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     
-
-
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "it file"
         $parentFolder = Split-Path -Path $targetFullPath
