@@ -565,9 +565,6 @@ try {
     $archiverWorkerPath = detectArchiver $archiverPath
     
     $outputFolder = Split-Path -Path $targetFullPath
-    if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
-        $outputFolder = $outputFolderPath
-    }
 
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
@@ -576,7 +573,7 @@ try {
             $outputFolder = $outputFolderPath
         }
 
-        UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
+        UnpackMainArchive $archiverWorkerPath $targetFullPath $outputFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
         Write-Host
