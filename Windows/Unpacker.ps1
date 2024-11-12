@@ -3,7 +3,7 @@ param (
     [string]$archiverPath,
     [int]$smartRenameMode = 0,
     [int]$deleteMode = 0,
-    [int]$duplicatesProcessModes = 1,
+    [int]$duplicatesProcessModes = 0,
     [switch]$overwriteExisting = $false,
     [Parameter(Mandatory)]
     [string]$targetPath
@@ -264,6 +264,31 @@ function UnpackMainArchive {
     }
 
     HandleInternalsRelease $unpackFolderPath
+
+    $finalFolderName = (Get-ChildItem -Path $unpackFolderPath).Parent.Name
+    $finalFolderExistInOutputFolder = Get-ChildItem -Path $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
+
+    if ($duplicatesProcessModes -eq 0) {
+        $indexSuffix = 0
+        if ($finalFolderExistInOutputFolder) {
+            while ($true) {
+                if (Test-Path "$outputFolderPath\$finalFolderName $indexSuffix") {
+                    $indexSuffix++
+                } else {
+                    break
+                }
+            }
+            Move-Item -Path $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName $indexSuffix"
+        } else {
+            Move-Item -Path $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName"
+        }
+    } elseif ($duplicatesProcessModes -eq 1) {
+        if ($finalFolderExistInOutputFolder) {
+            Remove-Item -Path "$outputFolderPath\$finalFolderName" -Force -Recurse
+        }
+        Move-Item -Path $unpackFolderPath -Destination $outputFolderPath -Force
+    }
+    Remove-Item -Path $unpackTempFolderPath -Force -Recurse
 }
 
 function RemoveDuplicateFiles {
@@ -324,6 +349,77 @@ function RemoveDuplicateFiles {
     }
 }
 
+function UnpackArchiveParts {
+    param (
+        [Parameter(Mandatory)]
+        [string]$folderPathWithItems
+    )
+    
+    $unpackTempFolderPath = GetUniqRandomFolder $folderPathWithItems
+
+    [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
+    
+    $files = Get-ChildItem -Path $folderPathWithItems -File
+    
+    $rarNewParts = $files | Where-Object { $_.Name -match '\.part\d+\.rar$' }
+    $rarNewFirstParts = $rarNewParts | Where-Object { $_.Name -match '\.part0*1\.rar$' }
+    
+    $rarOldParts = $files | Where-Object { $_.Name -match '\.r*\d+$' }
+    $rarOldFirstPartsNames = $rarOldParts | Where-Object { $_.Name -match '\.r0*1$' } | ForEach-Object { $_ -replace '\.r0*1$', '.rar' }
+    $rarOldFirstParts = $files | Where-Object {
+        $file = $_
+        $rarOldFirstPartsNames | Where-Object {
+            $file.Name -eq $_
+        }
+    }
+    
+    $zipNewFirstParts = $files | Where-Object { $_.Name -match '\.zip.0*1$' }
+    
+    $zipOldParts = $files | Where-Object { $_.Name -match '\.z*\d+$' }
+    $zipOldFirstPartsNames = $zipOldParts | Where-Object { $_.Name -match '\.z0*1$' } | ForEach-Object { $_ -replace '\.z0*1$', '.rar' }
+    $zipOldFirstParts = $files | Where-Object {
+        $file = $_
+        $zipOldFirstPartsNames | Where-Object {
+            $file.Name -eq $_
+        }
+    }
+
+    $7zFirstParts = $files | Where-Object { $_.Name -match '\.7z.0*1$' }
+    
+    $unpackTargets = @($rarNewFirstParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldFirstParts) + @($7zFirstParts)
+    $allArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts) 
+    
+    foreach ($archiveFile in $unpackTargets) {
+        $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
+        [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
+
+        if ($duplicatesProcessModes -eq 0) {
+            [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
+        } elseif ($duplicatesProcessModes -eq 1) {
+            [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
+        }
+    }
+
+    $allArchives | ForEach-Object { Remove-Item -Path $_.FullName -Force }
+
+    $itemsInside = Get-ChildItem -Path $unpackTempFolderPath
+    $foldersInside = Get-ChildItem -Path $unpackTempFolderPath -Directory
+
+    if (($itemsInside.Count -eq $foldersInside.Count) -and ($foldersInside.Count -eq 1)) {
+        $itemsInside2 = Get-ChildItem -Path $itemsInside.FullName
+        $foldersInside2 = Get-ChildItem -Path $itemsInside.FullName -Directory
+    
+        if (($itemsInside2.Count -eq $foldersInside2.Count) -and ($foldersInside2.Count -eq 1)) {
+            Move-Item -Path $foldersInside2.FullName -Destination $folderPathWithItems
+        } else {
+            Move-Item -Path "$($foldersInside.FullName)\*" -Destination $folderPathWithItems
+        }
+    } else {
+        Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems
+    }
+    Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+}
+
 function HandleInternalsRelease {
     param (
         [Parameter(Mandatory)]
@@ -335,11 +431,10 @@ function HandleInternalsRelease {
         -not ($_.Extension -in $metadataFilesExtensions)
     }
 
-    [System.Collections.Generic.List[string]]$namesFirstParts = New-Object System.Collections.Generic.List[string]
-
     if ($filteredItems.Count -eq ($folderItems | Where-Object { $_.Name -match '\.zip$' }).Count) {
+        Write-Host "Release archive contains only many zip-archives. Will procees all it."
         $unpackTempFolderPath = GetUniqRandomFolder $folderPathWithItems
-
+        
         [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
 
         if ($duplicatesProcessModes -eq 0) {
@@ -348,6 +443,32 @@ function HandleInternalsRelease {
             [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
             RemoveDuplicateFiles $folderPathWithItems
         }
+        
+        # removing all main zip-files
+        $zipFiles = Get-ChildItem -Path $folderPathWithItems -File -Filter "*.zip"
+        $zipFiles | ForEach-Object { Remove-Item -Path $_.FullName -Force }
+
+        $itemsInUnpackTemp = Get-ChildItem -Path $unpackTempFolderPath
+        $foldersInUnpackTemp = Get-ChildItem -Path $unpackTempFolderPath -Directory
+
+        if (($foldersInUnpackTemp.Count -eq 1) -and ($itemsInUnpackTemp.Count -eq $foldersInUnpackTemp.Count)) {
+            UnpackArchiveParts $folderPathWithItems
+        } else {
+            UnpackArchiveParts $unpackTempFolderPath
+            
+            $itemsInside = Get-ChildItem -Path $unpackTempFolderPath
+            $foldersInside = Get-ChildItem -Path $unpackTempFolderPath -Directory
+            
+            if (($itemsInside.Count -eq $foldersInside.Count) -and ($foldersInside.Count -eq 1)) {
+                Move-Item -Path $foldersInside[0].FullName -Destination $folderPathWithItems
+            } else {
+                Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems -Force
+            }
+            Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+        }
+    } else {
+        Write-Host "Release archive contains NOT only many zip-archives. Will procees all it."
+        UnpackArchiveParts $folderPathWithItems
     }
 
     # find first parts archives
