@@ -1,12 +1,12 @@
 param (
+    [Parameter(Mandatory)]
+    [string]$targetPath,
     [string]$archiverPath,
     [string]$outputFolderPath,
     [int]$smartRenameMode = 0,
     [int]$duplicatesProcessMode = 0,
     [switch]$overwriteExisting = $false,
-    [switch]$deleteArchiveAfterUnpack = $false,
-    [Parameter(Mandatory)]
-    [string]$targetPath
+    [switch]$deleteArchiveAfterUnpack = $false
 )
 
 if (-not (Test-Path $targetPath)) {
