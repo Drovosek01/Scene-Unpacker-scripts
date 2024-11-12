@@ -515,11 +515,18 @@ try {
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
         Write-Host
+        if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
+            $outputFolder = $outputFolderPath
+        }
 
         UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
         Write-Host
+        $outputFolder = $targetFullPath
+        if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
+            $outputFolder = $outputFolderPath
+        }
 
         $filesInTargetFolder = Get-ChildItem -Path $targetFullPath -File
         $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
