@@ -4,6 +4,7 @@ param (
     [int]$smartRenameMode = 0,
     [int]$duplicatesProcessMode = 0,
     [switch]$overwriteExisting = $false,
+    [switch]$deleteArchiveAfterUnpack = $false,
     [Parameter(Mandatory)]
     [string]$targetPath
 )
@@ -317,6 +318,10 @@ function UnpackMainArchive {
         }
     }
     Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
+
+    if ($deleteArchiveAfterUnpack) {
+        Remove-Item -LiteralPath $archivePath -Force
+    }
 
     Write-Host "End process file $archivePath"
     Write-Host
