@@ -15,7 +15,10 @@ if (-not (Test-Path $targetPath)) {
     exit 1
 }
 
-if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Leaf)) {
+if ($outputFolderPath -and (-not $(Test-Path -Path $outputFolderPath))) {
+    Write-Error "Output path not found"
+    exit 1
+} elseif ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Leaf)) {
     Write-Error "Output path is file. Need folder for output unpacked data"
     exit 1
 }
@@ -498,12 +501,13 @@ try {
     # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     
+    $parentFolder = Split-Path -Path $targetFullPath
+    if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
+        $parentFolder = $outputFolderPath
+    }
+    
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
-        $parentFolder = Split-Path -Path $targetFullPath
-        if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
-            $parentFolder = $outputFolderPath
-        }
         UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
