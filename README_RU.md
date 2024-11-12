@@ -23,22 +23,48 @@ Language: Русский | [English](README.md)
 
 ## Как пользоваться
 
-todo
+### На Windows:
+В Powershell
+```powershell
+cd .\Scene-Unpacker-scripts\Windows
+.\Unpacker.ps1 -targetPath "path to folder with archives" -outputFolderPath "path to folder for unpacked" -overwriteExisting -smartRenameMode 1 -duplicatesProcessMode 1 -deleteArchiveAfterUnpack
+```
+или
+```powershell
+cd .\Scene-Unpacker-scripts\Windows
+.\Unpacker.ps1 -targetPath "path to folder with archives"
+```
+или как-нибудь иначе.
+
+Подробнее про возможные аргументы и их описании смотрите в [документации](./docs/docs_RU.md)
+
+## Документация
+
+Смотрите в [папке docs](./docs/docs_RU.md)
 
 ## TODO
 
 - [ ] Добавить режим расширенного логирования выполненных действий
 - [ ] Добавить режим для перемещения файлов и папок в Корзину вместо обычного удаления
+- [ ] Написать/портировать решение для macOS
+- [ ] Написать/портировать решение для Linux
 
 ## Системные требования
 
 Необходимо наличие исполняемых файлов одного из архиваторов, поддерживаемых скриптом, в папке со скриптом. Либо эти же архиваторы должны быть установленны по в стандартные папки в системе: 
 
-На macOS:
+### На macOS:
 - todo
 
-На Windows:
+### На Windows:
 - 7-zip https://www.7-zip.org/
+- Также рекомендуется отключить [ограничение длины путей Windows](https://learn.microsoft.com/ru-ru/windows/win32/fileio/maximum-file-path-limitation?tabs=registry)
 
-На Linux:
+Весь код был написан и протестирован в Windows 10 x64 22H2 с 7-Zip 24.08 (x64)
+
+Я не проверял совместимость кода и использованных функций Powershell с предыдущими версиями. Вероятно для их выполнения понадобится Powershell 5.1 который идет в комплекте с Windows 10.
+
+Если вы работаете на Windows 7, 8, 8.1 то, вероятно, вам необходимо будет установить [Microsoft .NET Framework 4.8](https://support.microsoft.com/topic/microsoft-net-framework-4-8-offline-installer-for-windows-9d23f658-3b97-68ab-d013-aa3c3e7495e0) и [Powershell 5.1](https://www.microsoft.com/download/details.aspx/?id=54616) чтобы код из этого репозитория у вас работал.
+
+### На Linux:
 - todo
