@@ -32,6 +32,7 @@ $archiversDefaultPathes = @{
 }
 
 $metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
+$archivesFilesExtensions = $('.rar', '.zip', '.7z', '.gz')
 
 $targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
 
@@ -209,6 +210,8 @@ function UnpackMainArchive {
         [Parameter(Mandatory)]
         [string]$outputFolderPath
     )
+
+    Write-Host "Start process file $archivePath"
     
     # temporary folder where the archive will be unpacked
     $unpackTempFolderPath = ''
@@ -297,6 +300,9 @@ function UnpackMainArchive {
         Move-Item -Path $unpackFolderPath -Destination $outputFolderPath -Force
     }
     Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+
+    Write-Host "End process file $archivePath"
+    Write-Host
 }
 
 function RemoveDuplicateFiles {
@@ -505,13 +511,16 @@ try {
     if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
         $parentFolder = $outputFolderPath
     }
-    
+
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
         UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
-        # Write-Host "Это папка."
+        $filesInTargetFolder = Get-ChildItem -Path $targetFullPath -File
+        $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
+        
+        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $targetFullPath }
     }
     write-host "after $archiverWorkerPath"
     write-host "after $renamedName"
