@@ -3,8 +3,7 @@ param (
     [string]$archiverPath,
     [string]$outputFolderPath,
     [int]$smartRenameMode = 0,
-    [int]$deleteMode = 0,
-    [int]$duplicatesProcessModes = 0,
+    [int]$duplicatesProcessMode = 0,
     [switch]$overwriteExisting = $false,
     [Parameter(Mandatory)]
     [string]$targetPath
@@ -283,7 +282,12 @@ function UnpackMainArchive {
     $finalFolderName = (Get-ChildItem -Path $unpackFolderPath).Parent.Name
     $finalFolderExistInOutputFolder = Get-ChildItem -Path $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
 
-    if ($duplicatesProcessModes -eq 0) {
+    if ($overwriteExisting) {
+        if ($finalFolderExistInOutputFolder) {
+            Remove-Item -Path "$outputFolderPath\$finalFolderName" -Force -Recurse
+        }
+        Move-Item -Path $unpackFolderPath -Destination $outputFolderPath -Force
+    } else {
         $indexSuffix = 0
         if ($finalFolderExistInOutputFolder) {
             while ($true) {
@@ -297,11 +301,6 @@ function UnpackMainArchive {
         } else {
             Move-Item -Path $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName"
         }
-    } elseif ($duplicatesProcessModes -eq 1) {
-        if ($finalFolderExistInOutputFolder) {
-            Remove-Item -Path "$outputFolderPath\$finalFolderName" -Force -Recurse
-        }
-        Move-Item -Path $unpackFolderPath -Destination $outputFolderPath -Force
     }
     Remove-Item -Path $unpackTempFolderPath -Force -Recurse
 
@@ -422,9 +421,9 @@ function UnpackArchiveParts {
         $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
         [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
 
-        if ($duplicatesProcessModes -eq 0) {
+        if ($duplicatesProcessMode -eq 0) {
             [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
-        } elseif ($duplicatesProcessModes -eq 1) {
+        } elseif ($duplicatesProcessMode -eq 1) {
             [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
         }
     }
@@ -470,9 +469,9 @@ function HandleInternalsRelease {
         
         [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
 
-        if ($duplicatesProcessModes -eq 0) {
+        if ($duplicatesProcessMode -eq 0) {
             [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
-        } elseif ($duplicatesProcessModes -eq 1) {
+        } elseif ($duplicatesProcessMode -eq 1) {
             [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
             RemoveDuplicateFiles $folderPathWithItems
         }
