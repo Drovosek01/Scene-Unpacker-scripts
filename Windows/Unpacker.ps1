@@ -1,4 +1,3 @@
-# Main script
 param (
     [string]$archiverPath,
     [string]$outputFolderPath,
@@ -228,7 +227,14 @@ function UnpackMainArchive {
     [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
     [void](New-Item -Path $unpackFolderPath -Force -ItemType Directory)
 
-    [void](& $archiverWorkerPath x $archivePath -o"$unpackFolderPath")
+    try {
+        [void](& $archiverWorkerPath x $archivePath -o"$unpackFolderPath")
+    }
+    catch {
+        Write-Error "Error while trying unpack Main release archive"
+        Write-Error $_.Exception.Message
+        exit 1
+    }
 
     $itemsInUnpackedFolder = Get-ChildItem -Path $unpackFolderPath
     $foldersInUnpackedFolder = $itemsInUnpackedFolder | Where-Object { $_.PSIsContainer }
@@ -422,9 +428,23 @@ function UnpackArchiveParts {
         [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
 
         if ($duplicatesProcessMode -eq 0) {
-            [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
+            try {
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives with safe duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
         } elseif ($duplicatesProcessMode -eq 1) {
-            [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
+            try {
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives with delete duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
         }
     }
 
@@ -470,9 +490,23 @@ function HandleInternalsRelease {
         [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
 
         if ($duplicatesProcessMode -eq 0) {
-            [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
+            try {
+                [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives with safe duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
         } elseif ($duplicatesProcessMode -eq 1) {
-            [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
+            try {
+                [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives without delete duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
             RemoveDuplicateFiles $folderPathWithItems
         }
         
