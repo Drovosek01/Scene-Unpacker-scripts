@@ -236,7 +236,7 @@ function UnpackMainArchive {
         exit 1
     }
 
-    $itemsInUnpackedFolder = Get-ChildItem -Path $unpackFolderPath
+    $itemsInUnpackedFolder = Get-ChildItem -LiteralPath $unpackFolderPath
     $foldersInUnpackedFolder = $itemsInUnpackedFolder | Where-Object { $_.PSIsContainer }
 
     if (($itemsInUnpackedFolder.Count -eq 1) -and ($foldersInUnpackedFolder.Count -eq 1)) {
@@ -257,9 +257,9 @@ function UnpackMainArchive {
             # and folder name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" has more details about release and product
             # therefore, we leave the folder with the name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" as the main release folder
             $tempFolderName = "folderForDelete"
-            Rename-Item -Path $unpackFolderPath -NewName $tempFolderName
-            Move-Item -Path ($unpackTempFolderPath + '\' + $tempFolderName + '\' + $foldersInUnpackedFolder[0].Name) -Destination $unpackTempFolderPath
-            Remove-Item -Path ($unpackTempFolderPath + '\' + $tempFolderName)
+            Rename-Item -LiteralPath $unpackFolderPath -NewName $tempFolderName
+            Move-Item -LiteralPath ($unpackTempFolderPath + '\' + $tempFolderName + '\' + $foldersInUnpackedFolder[0].Name) -Destination $unpackTempFolderPath
+            Remove-Item -LiteralPath ($unpackTempFolderPath + '\' + $tempFolderName)
             $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].Name
 
             if ($archiveName -eq $foldersInUnpackedFolder[0].Name) {
@@ -274,9 +274,9 @@ function UnpackMainArchive {
             # for exmaple in archive "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE.rar" we have folder "FLARE-1918-MAC"
             # and folder name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" has more details about release and product
             # therefore, we leave the folder with the name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" as the main release folder
-            Move-Item -Path $foldersInUnpackedFolder[0].FullName -Destination $unpackTempFolderPath
-            Remove-Item -Path $unpackFolderPath
-            Rename-Item -Path $foldersInUnpackedFolder[0].FullName -NewName $archiveName
+            Move-Item -LiteralPath $foldersInUnpackedFolder[0].FullName -Destination $unpackTempFolderPath
+            Remove-Item -LiteralPath $unpackFolderPath
+            Rename-Item -LiteralPath $foldersInUnpackedFolder[0].FullName -NewName $archiveName
             $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].FullName
             Write-Host "Archive and folder in archive root have different name"
             Write-Host "- archive name selected like base name"
@@ -285,14 +285,15 @@ function UnpackMainArchive {
 
     HandleInternalsRelease $unpackFolderPath
 
-    $finalFolderName = (Get-ChildItem -Path $unpackFolderPath).Parent.Name
-    $finalFolderExistInOutputFolder = Get-ChildItem -Path $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
+    $finalFolderName = (Get-ChildItem -LiteralPath $unpackFolderPath).Parent.Name
+    $finalFolderName = GetRenamedName $finalFolderName $smartRenameMode
+    $finalFolderExistInOutputFolder = Get-ChildItem -LiteralPath $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
 
     if ($overwriteExisting) {
         if ($finalFolderExistInOutputFolder) {
-            Remove-Item -Path "$outputFolderPath\$finalFolderName" -Force -Recurse
+            Remove-Item -LiteralPath "$outputFolderPath\$finalFolderName" -Force -Recurse
         }
-        Move-Item -Path $unpackFolderPath -Destination $outputFolderPath -Force
+        Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName" -Force
     } else {
         $indexSuffix = 0
         if ($finalFolderExistInOutputFolder) {
@@ -303,12 +304,12 @@ function UnpackMainArchive {
                     break
                 }
             }
-            Move-Item -Path $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName $indexSuffix"
+            Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName $indexSuffix"
         } else {
-            Move-Item -Path $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName"
+            Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName"
         }
     }
-    Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+    Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
 
     Write-Host "End process file $archivePath"
     Write-Host
@@ -327,7 +328,7 @@ function RemoveDuplicateFiles {
         [string]$folderPathWithItems
     )
     
-    $files = Get-ChildItem -Path $folderPathWithItems -Recurse -File
+    $files = Get-ChildItem -LiteralPath $folderPathWithItems -Recurse -File
     
     # force move meta-files without postfix _00, _01, _02 ... etc to start files collection
     $patterns = $metadataFilesExtensions | ForEach-Object { "_\d+\$_$" }
@@ -357,12 +358,12 @@ function RemoveDuplicateFiles {
 
     foreach ($file in $sortedFiles) {
         try {
-            $fileHash = Get-FileHash -Path $file.FullName -Algorithm MD5
+            $fileHash = Get-FileHash -LiteralPath $file.FullName -Algorithm MD5
 
             if ($fileHashes.ContainsKey($fileHash.Hash)) {
                 # Write-Host "Remove duplicate: $($file.FullName)"
                 $duplicatesCounter += 1
-                Remove-Item -Path $file.FullName -Force
+                Remove-Item -LiteralPath $file.FullName -Force
             } else {
                 $fileHashes[$fileHash.Hash] = $file.FullName
             }
@@ -393,7 +394,7 @@ function UnpackArchiveParts {
 
     [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
     
-    $files = Get-ChildItem -Path $folderPathWithItems -File
+    $files = Get-ChildItem -LiteralPath $folderPathWithItems -File
     
     $rarNewParts = $files | Where-Object { $_.Name -match '\.part\d+\.rar$' }
     $rarNewFirstParts = $rarNewParts | Where-Object { $_.Name -match '\.part0*1\.rar$' }
@@ -448,24 +449,24 @@ function UnpackArchiveParts {
         }
     }
 
-    $allArchives | ForEach-Object { Remove-Item -Path $_.FullName -Force }
+    $allArchives | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 
-    $itemsInside = Get-ChildItem -Path $unpackTempFolderPath
-    $foldersInside = Get-ChildItem -Path $unpackTempFolderPath -Directory
+    $itemsInside = Get-ChildItem -LiteralPath $unpackTempFolderPath
+    $foldersInside = Get-ChildItem -LiteralPath $unpackTempFolderPath -Directory
 
     if (($itemsInside.Count -eq $foldersInside.Count) -and ($foldersInside.Count -eq 1)) {
-        $itemsInside2 = Get-ChildItem -Path $itemsInside.FullName
-        $foldersInside2 = Get-ChildItem -Path $itemsInside.FullName -Directory
+        $itemsInside2 = Get-ChildItem -LiteralPath $itemsInside.FullName
+        $foldersInside2 = Get-ChildItem -LiteralPath $itemsInside.FullName -Directory
     
         if (($itemsInside2.Count -eq $foldersInside2.Count) -and ($foldersInside2.Count -eq 1)) {
-            Move-Item -Path $foldersInside2.FullName -Destination $folderPathWithItems
+            Move-Item -LiteralPath $foldersInside2.FullName -Destination $folderPathWithItems
         } else {
             Move-Item -Path "$($foldersInside.FullName)\*" -Destination $folderPathWithItems
         }
     } else {
         Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems
     }
-    Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+    Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
 }
 
 <#
@@ -478,7 +479,7 @@ function HandleInternalsRelease {
         [string]$folderPathWithItems
     )
     
-    $folderItems = Get-ChildItem -Path $folderPathWithItems
+    $folderItems = Get-ChildItem -LiteralPath $folderPathWithItems
     $filteredItems = $folderItems | Where-Object { 
         -not ($_.Extension -in $metadataFilesExtensions)
     }
@@ -511,26 +512,26 @@ function HandleInternalsRelease {
         }
         
         # removing all main zip-files
-        $zipFiles = Get-ChildItem -Path $folderPathWithItems -File -Filter "*.zip"
-        $zipFiles | ForEach-Object { Remove-Item -Path $_.FullName -Force }
+        $zipFiles = Get-ChildItem -LiteralPath $folderPathWithItems -File -Filter "*.zip"
+        $zipFiles | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 
-        $itemsInUnpackTemp = Get-ChildItem -Path $unpackTempFolderPath
-        $foldersInUnpackTemp = Get-ChildItem -Path $unpackTempFolderPath -Directory
+        $itemsInUnpackTemp = Get-ChildItem -LiteralPath $unpackTempFolderPath
+        $foldersInUnpackTemp = Get-ChildItem -LiteralPath $unpackTempFolderPath -Directory
 
         if (($foldersInUnpackTemp.Count -eq 1) -and ($itemsInUnpackTemp.Count -eq $foldersInUnpackTemp.Count)) {
             UnpackArchiveParts $folderPathWithItems
         } else {
             UnpackArchiveParts $unpackTempFolderPath
             
-            $itemsInside = Get-ChildItem -Path $unpackTempFolderPath
-            $foldersInside = Get-ChildItem -Path $unpackTempFolderPath -Directory
+            $itemsInside = Get-ChildItem -LiteralPath $unpackTempFolderPath
+            $foldersInside = Get-ChildItem -LiteralPath $unpackTempFolderPath -Directory
             
             if (($itemsInside.Count -eq $foldersInside.Count) -and ($foldersInside.Count -eq 1)) {
-                Move-Item -Path $foldersInside[0].FullName -Destination $folderPathWithItems
+                Move-Item -LiteralPath $foldersInside[0].FullName -Destination $folderPathWithItems
             } else {
                 Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems -Force
             }
-            Remove-Item -Path $unpackTempFolderPath -Force -Recurse
+            Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
         }
     } else {
         Write-Host "Release archive contains NOT only many zip-archives. Will procees all it."
@@ -580,7 +581,7 @@ try {
             $outputFolder = $outputFolderPath
         }
 
-        $filesInTargetFolder = Get-ChildItem -Path $targetFullPath -File
+        $filesInTargetFolder = Get-ChildItem -LiteralPath $targetFullPath -File
         $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
         
         $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder }
@@ -589,5 +590,6 @@ try {
     write-host "after $renamedName"
 }
 catch {
-    <#Do this if a terminating exception happens#>
+    Write-Error $_.Exception.Message
+    exit 1
 }
