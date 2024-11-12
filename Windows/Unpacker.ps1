@@ -507,20 +507,24 @@ try {
     # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     
-    $parentFolder = Split-Path -Path $targetFullPath
+    $outputFolder = Split-Path -Path $targetFullPath
     if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
-        $parentFolder = $outputFolderPath
+        $outputFolder = $outputFolderPath
     }
 
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
+        Write-Host
+
         UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
+        Write-Host
+
         $filesInTargetFolder = Get-ChildItem -Path $targetFullPath -File
         $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
         
-        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $targetFullPath }
+        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder }
     }
     write-host "after $archiverWorkerPath"
     write-host "after $renamedName"
