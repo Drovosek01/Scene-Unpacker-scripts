@@ -1,6 +1,7 @@
 # Main script
 param (
     [string]$archiverPath,
+    [string]$outputFolderPath,
     [int]$smartRenameMode = 0,
     [int]$deleteMode = 0,
     [int]$duplicatesProcessModes = 0,
@@ -14,6 +15,10 @@ if (-not (Test-Path $targetPath)) {
     exit 1
 }
 
+if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Leaf)) {
+    Write-Error "Output path is file. Need folder for output unpacked data"
+    exit 1
+}
 
 # =====
 # GLOBAL VARIABLES
@@ -494,10 +499,14 @@ try {
     $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     
     if (Test-Path -Path $targetFullPath -PathType Leaf) {
-        Write-Host "it file"
+        Write-Host "Target is file"
         $parentFolder = Split-Path -Path $targetFullPath
+        if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
+            $parentFolder = $outputFolderPath
+        }
         UnpackMainArchive $archiverWorkerPath $targetFullPath $parentFolder
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
+        Write-Host "Target is folder"
         # Write-Host "Это папка."
     }
     write-host "after $archiverWorkerPath"
