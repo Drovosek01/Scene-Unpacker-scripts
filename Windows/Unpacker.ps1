@@ -442,19 +442,19 @@ function UnpackArchiveParts {
 
         if ($duplicatesProcessMode -eq 0) {
             try {
-                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives with safe duplicates"
+                Write-Error "Error while trying unpack zip archives with delete duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
         } elseif ($duplicatesProcessMode -eq 1) {
             try {
-                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives with delete duplicates"
+                Write-Error "Error while trying unpack zip archives with safe duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
@@ -507,7 +507,7 @@ function HandleInternalsRelease {
                 [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aos)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives with safe duplicates"
+                Write-Error "Error while trying unpack zip archives with delete duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
@@ -516,7 +516,7 @@ function HandleInternalsRelease {
                 [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives without delete duplicates"
+                Write-Error "Error while trying unpack zip archives without safe duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
