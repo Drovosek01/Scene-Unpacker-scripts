@@ -201,6 +201,10 @@ function GetUniqRandomFolder {
     }
 }
 
+<#
+.SYNOPSIS
+Function for unpacking release arcvhive and process all included files
+#>
 function UnpackMainArchive {
     param (
         [Parameter(Mandatory)]
@@ -305,6 +309,13 @@ function UnpackMainArchive {
     Write-Host
 }
 
+<#
+.SYNOPSIS
+Function for remove duplice files
+
+.DESCRIPTION
+Function compute hash all files in recived folder and all subfolders and deletes files whose hash is repeated
+#>
 function RemoveDuplicateFiles {
     param (
         [Parameter(Mandatory)]
@@ -363,6 +374,10 @@ function RemoveDuplicateFiles {
     }
 }
 
+<#
+.SYNOPSIS
+Function for unpacking archive parts included in main/release archive
+#>
 function UnpackArchiveParts {
     param (
         [Parameter(Mandatory)]
@@ -434,6 +449,10 @@ function UnpackArchiveParts {
     Remove-Item -Path $unpackTempFolderPath -Force -Recurse
 }
 
+<#
+.SYNOPSIS
+Function for process files included in main/release archive
+#>
 function HandleInternalsRelease {
     param (
         [Parameter(Mandatory)]
