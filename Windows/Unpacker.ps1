@@ -21,6 +21,8 @@ if ($outputFolderPath -and (-not $(Test-Path -Path $outputFolderPath))) {
     exit 1
 }
 
+
+
 # =====
 # GLOBAL VARIABLES
 # =====
@@ -34,10 +36,16 @@ $archivesFilesExtensions = $('.rar', '.zip', '.7z', '.gz')
 
 $targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
 
+
+
 # =====
 # FUNCTIONS
 # =====
 
+<#
+.SYNOPSIS
+Function for detect if supported archiver installed in system
+#>
 function detectDefaultArchivers {
     foreach ($key in $archiversDefaultPathes.Keys) {
         if (Test-Path $archiversDefaultPathes[$key]) {
@@ -46,7 +54,6 @@ function detectDefaultArchivers {
         }
     }
 }
-
 
 <#
 .DESCRIPTION
@@ -538,27 +545,19 @@ function HandleInternalsRelease {
         UnpackArchiveParts $folderPathWithItems
     }
 
-    # find first parts archives
-    # 1. все zip с разными именами
-    # 2. .part00.rar
-    # 3. .rar + .rXX
-    # маловероятные
-    # 4. .zip.XXX
-    # 5. .zip + .zXX
-    # 6. .tar.XXX
-    # 7. .gz.XXX
-    # 8. .7z.XXX
-    # 9. все rar с разными именами
-    # 10. все 7z с разными именами
-
-
+    # TODO:
+    # Maybe here need handle cases when in  main release archive contained
+    # heap only little .7z files or only little .rar files or other formats
 }
 
 
+
+# =====
+# MAIN
+# =====
+
 try {
     $archiverWorkerPath = detectArchiver $archiverPath
-    # $archiverWorkerPath = 'C:\Program Files\7-Zip\7z.exe'
-    $renamedName = GetRenamedName "NCH.Software.Express.Burn.Plus.v12.02.MacOS.Incl.Keygen-BTCR" $smartRenameMode
     
     $outputFolder = Split-Path -Path $targetFullPath
     if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
@@ -586,8 +585,6 @@ try {
         
         $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder }
     }
-    write-host "after $archiverWorkerPath"
-    write-host "after $renamedName"
 }
 catch {
     Write-Error $_.Exception.Message
