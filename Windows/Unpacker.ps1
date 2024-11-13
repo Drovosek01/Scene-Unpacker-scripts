@@ -62,6 +62,7 @@ function detectDefaultArchivers {
 Function for check does the transferred file name match the extension with the file name that is contained in one of the paths of the standard archivers
 #>
 function isHashTableContainGivenFilename {
+    [OutputType([bool])]
     param (
         [Parameter(Mandatory)]
         [string]$filename
@@ -88,6 +89,7 @@ Checks whether there is a file in the file system that has been transferred as a
 If there is no file on the transmitted path or its name does not match the name of the standard archiver, the paths of the standard archivers will be checked and the first one that is on the disk will be used.
 #>
 function detectArchiver {
+    [OutputType([string])]
     param (
         [string]$archiverPath
     )
@@ -137,6 +139,7 @@ It is assumed that this renaming will be used for the main/external folders in w
 The function replaces dots, dashes and underscores with spaces, depending on the transmitted processing mode.
 #>
 function GetRenamedName {
+    [OutputType([string])]
     param (
         [Parameter(Mandatory)]
         [string]$filename,
@@ -193,6 +196,7 @@ function GetRenamedName {
 Function replace uniq random name for folder which can be created in the transferred folder
 #>
 function GetUniqRandomFolder {
+    [OutputType([string])]
     param (
         [Parameter(Mandatory)]
         [string]$outputFolderPath
