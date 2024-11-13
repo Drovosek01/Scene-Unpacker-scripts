@@ -34,6 +34,7 @@ $archiversDefaultPathes = @{
 
 $metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
 $archivesFilesExtensions = $('.rar', '.zip', '.7z', '.gz')
+$archivesFirstPartsMatchPatterns = $('\.part0*1\.rar$', '\.zip.0*1$', '\.7z.0*1$')
 
 $targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
 
@@ -571,6 +572,25 @@ try {
         Write-Host
         if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
             $outputFolder = $outputFolderPath
+        }
+
+        $targetFile = Get-ChildItem -LiteralPath $targetFullPath
+        $fileIsArchive = $false
+
+        if ($archivesFilesExtensions | Where-Object { $targetFile.Extension -in $_ }) {
+            if ($targetFile.Name -match "\.part0*[2-9]") {
+                Write-Error "Give first part or whole archive. Not first part cannot be used for unpack."
+                exit 1
+            }
+
+            $fileIsArchive = $true
+        } elseif ($archivesFirstPartsMatchPatterns | Where-Object { $targetFullPath -match $_ }) {
+            $fileIsArchive = $true
+        }
+
+        if (-not $fileIsArchive) {
+            Write-Error "Looks like given file is not archive or not first part of archive"
+            exit 1
         }
 
         UnpackMainArchive $archiverWorkerPath $targetFullPath $outputFolder
