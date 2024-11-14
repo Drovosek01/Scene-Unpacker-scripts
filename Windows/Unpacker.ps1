@@ -459,7 +459,7 @@ function UnpackArchiveParts {
                 [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives with safe duplicates"
+                Write-Error "Error while trying unpack zip archives with save duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
@@ -479,6 +479,107 @@ function UnpackArchiveParts {
             Move-Item -LiteralPath $foldersInside2.FullName -Destination $folderPathWithItems
         } else {
             Move-Item -Path "$($foldersInside.FullName)\*" -Destination $folderPathWithItems
+        }
+    } else {
+        Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems
+    }
+    Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
+}
+
+function UnpackOnlyArchiveParts {
+    param (
+        [Parameter(Mandatory)]
+        [string]$folderPathWithItems,
+        [Parameter(Mandatory)]
+        [string]$outputFolderPath,
+        [Parameter(Mandatory)]
+        [bool]$needCreateFolderNamedArchive = $false,
+        [Parameter(Mandatory)]
+        [bool]$needRemoveUnpackedArchives = $false
+    )
+    
+    $files = Get-ChildItem -LiteralPath $folderPathWithItems -File
+    
+    $rarNewParts = $files | Where-Object { $_.Name -match '\.part\d+\.rar$' }
+    $rarNewFirstParts = $rarNewParts | Where-Object { $_.Name -match '\.part0*1\.rar$' }
+    
+    $rarOldParts = $files | Where-Object { $_.Name -match '\.r*\d+$' }
+    $rarOldFirstPartsNames = $rarOldParts | Where-Object { $_.Name -match '\.r0*1$' } | ForEach-Object { $_ -replace '\.r0*1$', '.rar' }
+    $rarOldFirstParts = $files | Where-Object {
+        $file = $_
+        $rarOldFirstPartsNames | Where-Object {
+            $file.Name -eq $_
+        }
+    }
+    
+    $zipNewFirstParts = $files | Where-Object { $_.Name -match '\.zip.0*1$' }
+    
+    $zipOldParts = $files | Where-Object { $_.Name -match '\.z*\d+$' }
+    $zipOldFirstPartsNames = $zipOldParts | Where-Object { $_.Name -match '\.z0*1$' } | ForEach-Object { $_ -replace '\.z0*1$', '.rar' }
+    $zipOldFirstParts = $files | Where-Object {
+        $file = $_
+        $zipOldFirstPartsNames | Where-Object {
+            $file.Name -eq $_
+        }
+    }
+
+    $7zFirstParts = $files | Where-Object { $_.Name -match '\.7z.0*1$' }
+    
+    $unpackTargets = @($rarNewFirstParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldFirstParts) + @($7zFirstParts)
+    $allPartsArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts)
+    
+    foreach ($archiveFile in $unpackTargets) {
+        $unpackTempFolderPath = GetUniqRandomFolder $outputFolderPath
+        if ($needCreateFolderNamedArchive) {
+            $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
+        } else {
+            $unpackFolderArchivePath = $unpackTempFolderPath
+        }
+
+        [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
+
+        if ($duplicatesProcessMode -eq 0) {
+            try {
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives with delete duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        } elseif ($duplicatesProcessMode -eq 1) {
+            try {
+                [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aou)
+            }
+            catch {
+                Write-Error "Error while trying unpack zip archives with save duplicates"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        }
+        
+        if ($needCreateFolderNamedArchive) {
+            $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
+        } else {
+            $unpackFolderArchivePath = $unpackTempFolderPath
+        }
+    }
+
+    if ($needRemoveUnpackedArchives) {
+        $allArchives | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
+    }
+
+    $itemsInsideTemp = Get-ChildItem -LiteralPath $unpackTempFolderPath
+    $foldersInsideTemp = Get-ChildItem -LiteralPath $unpackTempFolderPath -Directory
+
+    if (($itemsInside.Count -eq $foldersInsideTemp.Count) -and ($foldersInsideTemp.Count -eq 1)) {
+        $itemsInside2 = Get-ChildItem -LiteralPath $itemsInsideTemp.FullName
+        $foldersInside2 = Get-ChildItem -LiteralPath $itemsInsideTemp.FullName -Directory
+    
+        if (($itemsInside2.Count -eq $foldersInside2.Count) -and ($foldersInside2.Count -eq 1)) {
+            Move-Item -LiteralPath $foldersInside2.FullName -Destination $folderPathWithItems
+        } else {
+            Move-Item -Path "$($foldersInsideTemp.FullName)\*" -Destination $folderPathWithItems
         }
     } else {
         Move-Item -Path "$unpackTempFolderPath\*" -Destination $folderPathWithItems
@@ -521,7 +622,7 @@ function HandleInternalsRelease {
                 [void](& $archiverWorkerPath x ($folderPathWithItems + '\*.zip') -o"$unpackTempFolderPath" -aou)
             }
             catch {
-                Write-Error "Error while trying unpack zip archives without safe duplicates"
+                Write-Error "Error while trying unpack zip archives without save duplicates"
                 Write-Error $_.Exception.Message
                 exit 1
             }
