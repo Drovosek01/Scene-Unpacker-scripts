@@ -43,11 +43,11 @@ I have seen several options for such packaging of small archives.
 
 ## Possible archive structures with parts inside
 
-The main/external archive that we download is usually 1 rar archive.
+There are special rules that release groups probably follow when creating releases (archives). These rules are different for different types of content and can be found on the website [scenerules](https://scenerules.org/)
 
-But what we need is inside and not immediately ready-made. The entire set of release files (for example, a program in exe format and a file .nfo) is compressed into a rar archive with a split parameter of a certain size. Then all these parts + the .nfo file + the file_id.diz file are packed into a regular rar archive without any separation.
+I found out about this site literally after the publication of this repository. Unfortunately, I do not have the opportunity to thoroughly familiarize myself with the rules for registration/archiving of releases on the resource [scenerules](https://scenerules.org/). And besides, the varese stage is a private place, and only a small number of people have access to the original varese scenes. Because of this privacy, hackers/crackers/reverse engineers and other types of release groups are not able to publish their work on varese scenes and create their releases imitating how the release groups do in varese scenes. Therefore, their releases/archives may differ.
 
-Here are the options for packing small archives into 1 shared archive:
+I tried to make the scripts as versatile as possible so that they could correctly process any archive structure, and not just what is written in the official rules of the varese scenes.  In my experience, this is what we may encounter most often:
 
 1. The release is packaged in a rar archive divided into parts with the extension `.rXX` at the end of
 ```
@@ -60,7 +60,7 @@ best.app.rar
 ```
 And when unpacking parts of the rar archive, that is, the `.rXX` files, we will get the release files.
 
-2. The release is packaged in a rar archive divided into parts with the extension `.partXX.rar` at the end
+1. The release is packaged in a rar archive divided into parts with the extension `.partXX.rar` at the end
 ```
 best.app.rar
 ├ best.app.part1.rar
@@ -71,7 +71,7 @@ best.app.rar
 ```
 And when you unpack the parts of the rar archive, there is a file `.partXX.rar` we receive the release.
 
-3. The same as option 1, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
+1. The same as option 1, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
 ```
 best.app.rar
 ├ best.app-1.zip
@@ -91,7 +91,7 @@ best.app.rar
 ```
 And first you need to unpack all zip archives, solving merge conflicts (that is, choosing to replace the `.nfo` and `.diz` files with those in the archive or skip the replacement), and then unpack the rar archive divided into parts
 
-4. The same as option 2, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
+1. The same as option 2, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
 ```
 best.app.rar
 ├ best.app-1.zip
