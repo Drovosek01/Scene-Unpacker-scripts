@@ -129,6 +129,7 @@ function detectArchiver {
     }
 }
 
+
 <#
 .SYNOPSIS
 Function for replace symbols in given text using given process mode
@@ -191,6 +192,7 @@ function GetRenamedName {
     return $tempFilename
 }
 
+
 <#
 .SYNOPSIS
 Function replace uniq random name for folder which can be created in the transferred folder
@@ -212,6 +214,63 @@ function GetUniqRandomFolder {
     }
 }
 
+
+<#
+.SYNOPSIS
+Function for delete given archive or archive and all hist parts
+#>
+function RemoveArchiveAndAllHisParts {
+    param (
+        [Parameter(Mandatory)]
+        [string]$archivePath
+    )
+    
+    $archiveName = [System.IO.Path]::GetFileNameWithoutExtension($archivePath)
+    $archiveExtension = [System.IO.Path]::GetExtension($archivePath)
+    $archiveParentFolder = Split-Path -Path $archivePath
+    
+    $filesInArchiveFolder = Get-ChildItem -LiteralPath $archiveParentFolder -File
+    $sameNameFiles = @()
+    
+    $isFullArchive = $false
+    
+    if ($archiveExtension -eq '.rar') {
+        $sameNameFiles = $filesInArchiveFolder | Where-Object { $_.Name -match "$archiveName\.r\d+" }
+        
+        if ($archiveName -match "\.part01$") {
+            $isFullArchive = $false
+            $mainArchiveName = $archiveName -replace "\.part01$", ""
+            $sameNameFiles = $filesInArchiveFolder | Where-Object { $_.Name -match "$mainArchiveName\.part\d+" }
+        } elseif ($sameNameFiles.Count -gt 0) {
+            $isFullArchive = $false
+        } else {
+            $isFullArchive = $true
+        }
+    } elseif ($archiveExtension -eq '.zip') {
+        $sameNameFiles = $filesInArchiveFolder | Where-Object { $_.Name -match "$archiveName\.z\d+" }
+
+        if ($sameNameFiles.Count -gt 0) {
+            $isFullArchive = $false
+        } else {
+            $isFullArchive = $true
+        }
+    } elseif ($archiveExtension -match '\.\d+') {
+        # looks like it or zip-parts like '.zip.000' or 7z-parts like '.7z.000'
+        $isFullArchive = $false
+        $sameNameFiles = $filesInArchiveFolder | Where-Object { $_.Name -match "$archiveName\.\d+" }
+    } else {
+        $isFullArchive = $true
+    }
+    
+    if ($isFullArchive) {
+        Remove-Item -Path $archivePath -Force
+    } else {
+        Remove-Item -LiteralPath $archivePath -Force
+        $sameNameFiles | Remove-Item -Force
+    }
+}
+
+
 <#
 .SYNOPSIS
 Function for unpacking release arcvhive and process all included files
@@ -223,7 +282,8 @@ function UnpackMainArchive {
         [Parameter(Mandatory)]
         [string]$archivePath,
         [Parameter(Mandatory)]
-        [string]$outputFolderPath
+        [string]$outputFolderPath,
+        [bool]$needRemoveUnpackedArchives = $false
     )
 
     Write-Host "Start process file $archivePath"
@@ -324,13 +384,14 @@ function UnpackMainArchive {
     }
     Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
 
-    if ($deleteArchiveAfterUnpack) {
-        Remove-Item -LiteralPath $archivePath -Force
+    if ($needRemoveUnpackedArchives) {
+        RemoveArchiveAndAllHisParts $archivePath
     }
 
     Write-Host "End process file $archivePath"
     Write-Host
 }
+
 
 <#
 .SYNOPSIS
@@ -397,6 +458,7 @@ function RemoveDuplicateFiles {
     }
 }
 
+
 <#
 .SYNOPSIS
 Function for unpacking archive parts included in main/release archive
@@ -441,10 +503,13 @@ function UnpackArchiveParts {
     $unpackTargets = @($rarNewFirstParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldFirstParts) + @($7zFirstParts)
     $allArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts) 
     
+    
+    write-host "unpackTargets $unpackTargets"
     foreach ($archiveFile in $unpackTargets) {
         $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
         [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
 
+        write-host "test"
         if ($duplicatesProcessMode -eq 0) {
             try {
                 [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
@@ -698,7 +763,7 @@ try {
             exit 1
         }
 
-        UnpackMainArchive $archiverWorkerPath $targetFullPath $outputFolder
+        UnpackMainArchive $archiverWorkerPath $targetFullPath $outputFolder $deleteArchiveAfterUnpack
     } elseif (Test-Path -Path $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
         Write-Host
@@ -710,7 +775,7 @@ try {
         $filesInTargetFolder = Get-ChildItem -LiteralPath $targetFullPath -File
         $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
         
-        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder }
+        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder $deleteArchiveAfterUnpack }
     }
 }
 catch {
