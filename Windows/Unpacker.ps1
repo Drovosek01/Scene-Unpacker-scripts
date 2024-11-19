@@ -195,6 +195,138 @@ function GetRenamedName {
 
 <#
 .SYNOPSIS
+Function for recursive move content from given folder if parent and included folders have 1 folder with same names
+#>
+function MoveContentUpFromIdenticalFolder {
+    param (
+        [Parameter(Mandatory)]
+        [string]$targetFullPath
+    )
+    
+    $parentFolderPath = Split-Path -Path $targetFullPath
+    
+    $parentFolderName = Split-Path -Path $parentFolderPath -Leaf
+    $targetFolderName = Split-Path -Path $targetFullPath -Leaf
+    
+    $itemsInsideTarget = Get-ChildItem -LiteralPath $targetFullPath
+    $foldersInsideTarget = Get-ChildItem -LiteralPath $targetFullPath -Directory
+    
+    $itemsInsideParent = Get-ChildItem -LiteralPath $targetFullPath
+    $foldersInsideParent = Get-ChildItem -LiteralPath $targetFullPath -Directory
+    
+    if (($itemsInsideTarget.Count -eq $foldersInsideTarget.Count) -and ($foldersInsideTarget.Count -eq 1)) {
+        $includedFolderName = Split-Path -Path $foldersInsideTarget[0].FullName -Leaf
+        
+        if ($includedFolderName -eq $targetFolderName) {
+            # target folder have only 1 folder inside and it have same name
+            
+            try {
+                $tempFolderName = "folderForDelete"
+                Rename-Item -LiteralPath $targetFullPath -NewName $tempFolderName
+                $tempTargetPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName"
+                $includedFolderTempPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName\$targetFolderName"
+                Move-Item -LiteralPath $includedFolderTempPath -Destination $parentFolderPath
+                Remove-Item -LiteralPath $tempTargetPath -Force
+            }
+            catch {
+                Write-Error "Error while trying move folder $targetFolderName up"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        } else {
+            MoveContentUpFromIdenticalFolder $foldersInsideTarget[0].FullName
+        }
+    } elseif (($itemsInsideParent.Count -eq $foldersInsideParent.Count) -and ($foldersInsideParent.Count -eq 1)) {
+        if ($parentFolderName -eq $targetFolderName) {
+            # parent folder have only 1 folder inside and it have same name
+
+            try {
+                $tempFolderName = "folderForDelete"
+                Rename-Item -LiteralPath $targetFullPath -NewName $tempFolderName
+                $tempTargetPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName"
+                Move-Item -Path "$tempTargetPath\*" -Destination $parentFolderPath -Force
+                Remove-Item -LiteralPath $tempTargetPath -Force
+            }
+            catch {
+                Write-Error "Error while trying move folder $targetFolderName up"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        }
+    } else {
+        return
+    }
+}
+
+
+<#
+.SYNOPSIS
+Function for recursive move content from given folder if parent and included folders have 1 folder with same names
+#>
+function MoveContentUpFromIdenticalFolder {
+    param (
+        [Parameter(Mandatory)]
+        [string]$targetFullPath
+    )
+    
+    $parentFolderPath = Split-Path -Path $targetFullPath
+    
+    $parentFolderName = Split-Path -Path $parentFolderPath -Leaf
+    $targetFolderName = Split-Path -Path $targetFullPath -Leaf
+    
+    $itemsInsideTarget = Get-ChildItem -LiteralPath $targetFullPath
+    $foldersInsideTarget = Get-ChildItem -LiteralPath $targetFullPath -Directory
+    
+    $itemsInsideParent = Get-ChildItem -LiteralPath $targetFullPath
+    $foldersInsideParent = Get-ChildItem -LiteralPath $targetFullPath -Directory
+    
+    if (($itemsInsideTarget.Count -eq $foldersInsideTarget.Count) -and ($foldersInsideTarget.Count -eq 1)) {
+        $includedFolderName = Split-Path -Path $foldersInsideTarget[0].FullName -Leaf
+        
+        if ($includedFolderName -eq $targetFolderName) {
+            # target folder have only 1 folder inside and it have same name
+            
+            try {
+                $tempFolderName = "folderForDelete"
+                Rename-Item -LiteralPath $targetFullPath -NewName $tempFolderName
+                $tempTargetPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName"
+                $includedFolderTempPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName\$targetFolderName"
+                Move-Item -LiteralPath $includedFolderTempPath -Destination $parentFolderPath
+                Remove-Item -LiteralPath $tempTargetPath -Force
+            }
+            catch {
+                Write-Error "Error while trying move folder $targetFolderName up"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        } else {
+            MoveContentUpFromIdenticalFolder $foldersInsideTarget[0].FullName
+        }
+    } elseif (($itemsInsideParent.Count -eq $foldersInsideParent.Count) -and ($foldersInsideParent.Count -eq 1)) {
+        if ($parentFolderName -eq $targetFolderName) {
+            # parent folder have only 1 folder inside and it have same name
+
+            try {
+                $tempFolderName = "folderForDelete"
+                Rename-Item -LiteralPath $targetFullPath -NewName $tempFolderName
+                $tempTargetPath = (Split-Path -Path $targetFullPath) + "\$tempFolderName"
+                Move-Item -Path "$tempTargetPath\*" -Destination $parentFolderPath -Force
+                Remove-Item -LiteralPath $tempTargetPath -Force
+            }
+            catch {
+                Write-Error "Error while trying move folder $targetFolderName up"
+                Write-Error $_.Exception.Message
+                exit 1
+            }
+        }
+    } else {
+        return
+    }
+}
+
+
+<#
+.SYNOPSIS
 Function replace uniq random name for folder which can be created in the transferred folder
 #>
 function GetUniqRandomFolder {
@@ -503,13 +635,10 @@ function UnpackArchiveParts {
     $unpackTargets = @($rarNewFirstParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldFirstParts) + @($7zFirstParts)
     $allArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts) 
     
-    
-    write-host "unpackTargets $unpackTargets"
     foreach ($archiveFile in $unpackTargets) {
         $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
         [void](New-Item -Path $unpackFolderArchivePath -Force -ItemType Directory)
 
-        write-host "test"
         if ($duplicatesProcessMode -eq 0) {
             try {
                 [void](& $archiverWorkerPath x $archiveFile.FullName -o"$unpackFolderArchivePath" -aos)
@@ -663,6 +792,7 @@ function HandleInternalsRelease {
     )
     
     $folderItems = Get-ChildItem -LiteralPath $folderPathWithItems
+    $folderFiles = Get-ChildItem -LiteralPath $folderPathWithItems -File
     $filteredItems = $folderItems | Where-Object { 
         -not ($_.Extension -in $metadataFilesExtensions)
     }
@@ -716,10 +846,15 @@ function HandleInternalsRelease {
             }
             Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
         }
+    } elseif (($folderItems.Count -eq 1) -and ($folderFiles.Count -eq $folderItems.Count)) {
+        Write-Host "Release archive contains only ONE archive. Will procees it."
+        UnpackMainArchive $archiverWorkerPath $folderItems[0].FullName $folderPathWithItems -needRemoveUnpackedArchives $true
     } else {
         Write-Host "Release archive contains NOT only many zip-archives. Will procees all it."
         UnpackArchiveParts $folderPathWithItems
     }
+
+    MoveContentUpFromIdenticalFolder $folderPathWithItems
 
     # TODO:
     # Maybe here need handle cases when in  main release archive contained
