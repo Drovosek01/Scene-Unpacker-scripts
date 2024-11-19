@@ -34,6 +34,7 @@ $archiversDefaultPathes = @{
 
 $metadataFilesExtensions = $('.nfo', '.diz', '.sfv', '.txt')
 $archivesFilesExtensions = $('.rar', '.zip', '.7z', '.gz')
+$archivesFilesMatchExtensions = $('\.rar$', '\.zip$', '\.7z$', '\.gz$')
 $archivesFirstPartsMatchPatterns = $('\.part0*1\.rar$', '\.zip.0*1$', '\.7z.0*1$')
 
 $targetFullPath = [System.IO.Path]::GetFullPath($targetPath)
@@ -755,9 +756,12 @@ try {
         }
 
         $filesInTargetFolder = Get-ChildItem -LiteralPath $targetFullPath -File
-        $archivesInTargetFolder = $filesInTargetFolder | Where-Object { $_.Extension -in $archivesFilesExtensions }
-        
-        $archivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder $deleteArchiveAfterUnpack -isIncludedArchive $false }
+        $targetArchivesInTargetFolder = $filesInTargetFolder | Where-Object {
+            $file = $_
+            ($archivesFilesMatchExtensions + $archivesFirstPartsMatchPatterns) | Where-Object { $file.Name -match $_ }
+        }
+
+        $targetArchivesInTargetFolder | ForEach-Object { UnpackMainArchive $archiverWorkerPath $_.FullName $outputFolder $deleteArchiveAfterUnpack -isIncludedArchive $false }
     }
 }
 catch {
