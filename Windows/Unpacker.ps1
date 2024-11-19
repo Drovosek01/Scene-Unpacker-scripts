@@ -432,7 +432,7 @@ function UnpackMainArchive {
 
     HandleInternalsRelease $unpackFolderPath
 
-    $finalFolderName = (Get-ChildItem -LiteralPath $unpackFolderPath).Parent.Name
+    $finalFolderName = Split-Path -Path $unpackFolderPath -Leaf
     $finalFolderName = GetRenamedName $finalFolderName $smartRenameMode
     $finalFolderExistInOutputFolder = Get-ChildItem -LiteralPath $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
 
@@ -607,9 +607,9 @@ function UnpackArchiveParts {
             }
         }
     }
-
+    
     $allArchives | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
-
+    
     $itemsInside = Get-ChildItem -LiteralPath $unpackTempFolderPath
     $foldersInside = Get-ChildItem -LiteralPath $unpackTempFolderPath -Directory
 
