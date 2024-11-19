@@ -432,18 +432,20 @@ function UnpackMainArchive {
 
     HandleInternalsRelease $unpackFolderPath
 
-    $finalFolderName = Split-Path -Path $unpackFolderPath -Leaf
-    $finalFolderName = GetRenamedName $finalFolderName $smartRenameMode
-    $finalFolderExistInOutputFolder = Get-ChildItem -LiteralPath $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
+    $unpackFolderName = Split-Path -Path $unpackFolderPath -Leaf
+    $finalFolderName = GetRenamedName $unpackFolderName $smartRenameMode
+    $isFinalFolderExistInOutputFolder = Get-ChildItem -LiteralPath $outputFolderPath -Directory | Where-Object { $_.Name -eq $finalFolderName }
 
     if ($overwriteExisting) {
-        if ($finalFolderExistInOutputFolder) {
+        if ($isFinalFolderExistInOutputFolder) {
             Remove-Item -LiteralPath "$outputFolderPath\$finalFolderName" -Force -Recurse
         }
+
         Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName" -Force
     } else {
         $indexSuffix = 0
-        if ($finalFolderExistInOutputFolder) {
+
+        if ($isFinalFolderExistInOutputFolder) {
             while ($true) {
                 if (Test-Path "$outputFolderPath\$finalFolderName $indexSuffix") {
                     $indexSuffix++
@@ -451,11 +453,13 @@ function UnpackMainArchive {
                     break
                 }
             }
+
             Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName $indexSuffix"
         } else {
             Move-Item -LiteralPath $unpackFolderPath -Destination "$outputFolderPath\$finalFolderName"
         }
     }
+
     Remove-Item -LiteralPath $unpackTempFolderPath -Force -Recurse
 
     if ($needRemoveUnpackedArchives) {
