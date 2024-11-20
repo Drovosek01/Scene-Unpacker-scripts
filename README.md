@@ -2,6 +2,8 @@
 
 Language: [Русский](README_RU.md) | English
 
+Video tour: [youtube (ru)](https://youtu.be/sWB87LuVa3s)
+
 ## What kind of repository is this
 
 This repository contains scripts for unpacking archives in which releases are distributed, re-uploaded from [warez-scene](https://en.wikipedia.org/wiki/Warez_scene). Scripts for different operating systems using both archivers built into the OS and third-party ones.
