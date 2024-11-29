@@ -60,7 +60,7 @@ best.app.rar
 ```
 And when unpacking parts of the rar archive, that is, the `.rXX` files, we will get the release files.
 
-1. The release is packaged in a rar archive divided into parts with the extension `.partXX.rar` at the end
+2. The release is packaged in a rar archive divided into parts with the extension `.partXX.rar` at the end
 ```
 best.app.rar
 ├ best.app.part1.rar
@@ -71,7 +71,7 @@ best.app.rar
 ```
 And when you unpack the parts of the rar archive, there is a file `.partXX.rar` we receive the release.
 
-1. The same as option 1, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
+3. The same as option 1, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
 ```
 best.app.rar
 ├ best.app-1.zip
@@ -91,7 +91,7 @@ best.app.rar
 ```
 And first you need to unpack all zip archives, solving merge conflicts (that is, choosing to replace the `.nfo` and `.diz` files with those in the archive or skip the replacement), and then unpack the rar archive divided into parts
 
-1. The same as option 2, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
+4. The same as option 2, but each part, along with the `.nfo` and `.diz` files, is packed in a zip archive.
 ```
 best.app.rar
 ├ best.app-1.zip
