@@ -571,6 +571,12 @@ function UnpackArchiveParts {
         }
     }
     
+    # If parts of the archive are parts of the old type, but the first part is named as a regular rar archive without parts, then we add it as the first part by force.
+    if (($rarOldParts.Length -gt 0) -and ($rarOldFirstParts.Length -eq 0) -and ($rarOldParts[0] -match '^(.*?)\.r\d+$')) {
+        $rarOldFirstParts = $files | Where-Object { $_.Name -eq "$($matches[1]).rar" }
+        $rarOldFirstPartsNames = $files | Where-Object { $_.Name -eq "$($matches[1]).rar" }
+    }
+    
     $zipNewFirstParts = $files | Where-Object { $_.Name -match '\.zip.0*1$' }
     
     $zipOldParts = $files | Where-Object { $_.Name -match '\.z*\d+$' }
@@ -585,7 +591,7 @@ function UnpackArchiveParts {
     $7zFirstParts = $files | Where-Object { $_.Name -match '\.7z.0*1$' }
     
     $unpackTargets = @($rarNewFirstParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldFirstParts) + @($7zFirstParts)
-    $allArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts) 
+    $allArchives = @($rarNewParts) + @($rarOldParts) + @($rarOldFirstParts) + @($zipNewFirstParts) + @($zipOldParts) + @($zipOldFirstParts) + @($7zFirstParts)
     
     foreach ($archiveFile in $unpackTargets) {
         $unpackFolderArchivePath = $unpackTempFolderPath + '\' + [System.IO.Path]::GetFileNameWithoutExtension($archiveFile.Name)
@@ -650,7 +656,7 @@ function HandleInternalsRelease {
     }
 
     if ($filteredItems.Count -eq ($folderItems | Where-Object { $_.Name -match '\.zip$' }).Count) {
-        Write-Host "Full archive contains only many zip-archives. Will procees all it."
+        Write-Host "Full archive contains only many zip-archives. Will process all it."
         $unpackTempFolderPath = GetUniqRandomFolder $folderPathWithItems
         
         [void](New-Item -Path $unpackTempFolderPath -Force -ItemType Directory)
