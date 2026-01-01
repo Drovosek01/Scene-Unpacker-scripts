@@ -9,15 +9,15 @@ param (
     [switch]$deleteArchiveAfterUnpack = $false
 )
 
-if (-not (Test-Path $targetPath)) {
+if (-not (Test-Path -LiteralPath $targetPath)) {
     Write-Error "Archive or folder for unpack not exist"
     exit 1
 }
 
-if ($outputFolderPath -and (-not $(Test-Path -Path $outputFolderPath))) {
+if ($outputFolderPath -and (-not $(Test-Path -LiteralPath $outputFolderPath))) {
     Write-Error "Output path not found"
     exit 1
-} elseif ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Leaf)) {
+} elseif ($outputFolderPath -and $(Test-Path -LiteralPath $outputFolderPath -PathType Leaf)) {
     Write-Error "Output path is file. Need folder for output unpacked data"
     exit 1
 }
@@ -724,7 +724,7 @@ try {
     
     $outputFolder = Split-Path -Path $targetFullPath
 
-    if (Test-Path -Path $targetFullPath -PathType Leaf) {
+    if (Test-Path -LiteralPath $targetFullPath -PathType Leaf) {
         Write-Host "Target is file"
         Write-Host
         if ($outputFolderPath -and $(Test-Path -Path $outputFolderPath -PathType Container)) {
@@ -751,7 +751,7 @@ try {
         }
 
         UnpackMainArchive $archiverWorkerPath $targetFullPath $outputFolder $deleteArchiveAfterUnpack -isIncludedArchive $false
-    } elseif (Test-Path -Path $targetFullPath -PathType Container) {
+    } elseif (Test-Path -LiteralPath $targetFullPath -PathType Container) {
         Write-Host "Target is folder"
         Write-Host
         $outputFolder = $targetFullPath
