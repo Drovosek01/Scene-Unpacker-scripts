@@ -1,5 +1,16 @@
 # Documentation
 
+- [Documentation](#documentation)
+  - [Script arguments/parameters](#script-argumentsparameters)
+  - [Types of archives](#types-of-archives)
+  - [Possible archive structures with parts inside](#possible-archive-structures-with-parts-inside)
+    - [Additional nuances with archives:](#additional-nuances-with-archives)
+  - [Smart renaming](#smart-renaming)
+    - [What are the renaming modes?](#what-are-the-renaming-modes)
+  - [Removing duplicates](#removing-duplicates)
+  - [Revealed nuances](#revealed-nuances)
+
+
 ## Script arguments/parameters
 
 1. `targetPath` | string | **required**
