@@ -418,13 +418,22 @@ function UnpackMainArchive {
             }
         } elseif ($dotsCountArchiveName -gt $dotsCountUnpackedFolderName) {
             # If archive has more dots than folder inside archive root
-            # for exmaple in archive "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE.rar" we have folder "FLARE-1918-MAC"
+            # for example in archive "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE.rar" we have folder "FLARE-1918-MAC"
             # and folder name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" has more details about release and product
             # therefore, we leave the folder with the name "Lunacy.Audio.BEAM.v1.1.6.Incl.Keygen.macOS-FLARE" as the main release folder
+            
+            # Save the folder name and create the correct path after moving
+            $movedFolderName = $foldersInUnpackedFolder[0].Name
+            $movedFolderNewPath = Join-Path -Path $unpackTempFolderPath -ChildPath $movedFolderName
+            
             Move-Item -LiteralPath $foldersInUnpackedFolder[0].FullName -Destination $unpackTempFolderPath
             Remove-Item -LiteralPath $unpackFolderPath
-            Rename-Item -LiteralPath $foldersInUnpackedFolder[0].FullName -NewName $archiveName
-            $unpackFolderPath = $unpackTempFolderPath + '\' + $foldersInUnpackedFolder[0].FullName
+            
+            # Rename an already moved folder using its new path, not the old FullName.
+            Rename-Item -LiteralPath $movedFolderNewPath -NewName $archiveName
+            
+            # We form the final path correctly, using the archive name, and not the full old path.
+            $unpackFolderPath = Join-Path -Path $unpackTempFolderPath -ChildPath $archiveName
             Write-Host "Archive and folder in archive root have different name"
             Write-Host "- archive name selected like base name"
         }
@@ -482,7 +491,7 @@ function UnpackMainArchive {
 Function for remove duplice files
 
 .DESCRIPTION
-Function compute hash all files in recived folder and all subfolders and deletes files whose hash is repeated
+Function compute hash all files in received folder and all subfolders and deletes files whose hash is repeated
 #>
 function RemoveDuplicateFiles {
     param (
