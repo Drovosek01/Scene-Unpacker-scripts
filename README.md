@@ -4,6 +4,18 @@ Language: [Русский](README_RU.md) | English
 
 Video tour: [youtube (ru)](https://youtu.be/sWB87LuVa3s)
 
+- [Scene Unpacker scripts](#scene-unpacker-scripts)
+  - [What kind of repository is this](#what-kind-of-repository-is-this)
+  - [How to use](#how-to-use)
+    - [On Windows:](#on-windows)
+  - [Documentation](#documentation)
+  - [TODO](#todo)
+  - [System requirements](#system-requirements)
+    - [On Windows:](#on-windows-1)
+    - [On macOS:](#on-macos)
+    - [On Linux:](#on-linux)
+
+
 ## What kind of repository is this
 
 This repository contains scripts for unpacking archives in which releases are distributed, re-uploaded from [warez-scene](https://en.wikipedia.org/wiki/Warez_scene). Scripts for different operating systems using both archivers built into the OS and third-party ones.
@@ -53,10 +65,7 @@ See in [docs folder](./docs/docs_EN.md)
 
 ## System requirements
 
-It is necessary to have the executable files of one of the archivers supported by the script in the script folder. Or the same archivers should be installed in standard folders in the system.: 
-
-### On macOS:
-- todo
+It is necessary to have the executable files of one of the archivers supported by the script in the script folder. Or the same archivers should be installed in standard folders in the system:
 
 ### On Windows:
 - 7-zip https://www.7-zip.org/
@@ -67,6 +76,9 @@ All code was written and tested on Windows 10 x64 22H2 with 7-Zip 24.08 (x64)
 I have not checked the compatibility of the code and the Powershell functions used with previous versions. You will probably need Powershell 5.1, which comes bundled with Windows 10, to perform them.
 
 If you are running on Windows 7, 8, 8.1, then you will probably need to install [Microsoft.NET Framework 4.8](https://support.microsoft.com/topic/microsoft-net-framework-4-8-offline-installer-for-windows-9d23f658-3b97-68ab-d013-aa3c3e7495e0 ) and [Powershell 5.1](https://www.microsoft.com/download/details.aspx/?id=54616 ) to make the code from this repository work for you.
+
+### On macOS:
+- todo
 
 ### On Linux:
 - todo

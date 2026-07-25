@@ -4,6 +4,18 @@ Language: Русский | [English](README.md)
 
 Видео тур: [youtube](https://youtu.be/sWB87LuVa3s)
 
+- [Scene Unpacker scripts](#scene-unpacker-scripts)
+  - [Что это за репозиторий](#что-это-за-репозиторий)
+  - [Как пользоваться](#как-пользоваться)
+    - [На Windows:](#на-windows)
+  - [Документация](#документация)
+  - [TODO](#todo)
+  - [Системные требования](#системные-требования)
+    - [На Windows:](#на-windows-1)
+    - [На macOS:](#на-macos)
+    - [На Linux:](#на-linux)
+
+
 ## Что это за репозиторий
 
 В этом репозитории находятся скрипты для распаковки архивов, в которых распространяются релизы, перезалитые с [варез-сцен](https://ru.wikipedia.org/wiki/%D0%92%D0%B0%D1%80%D0%B5%D0%B7-%D1%81%D1%86%D0%B5%D0%BD%D0%B0). Скрипты для разных ОС с использованием как встроенных в ОС архиваторов, так и сторонних.
@@ -55,9 +67,6 @@ cd .\Scene-Unpacker-scripts\Windows
 
 Необходимо наличие исполняемых файлов одного из архиваторов, поддерживаемых скриптом, в папке со скриптом. Либо эти же архиваторы должны быть установленны по в стандартные папки в системе: 
 
-### На macOS:
-- todo
-
 ### На Windows:
 - 7-zip https://www.7-zip.org/
 - Также рекомендуется отключить [ограничение длины путей Windows](https://learn.microsoft.com/ru-ru/windows/win32/fileio/maximum-file-path-limitation?tabs=registry)
@@ -67,6 +76,9 @@ cd .\Scene-Unpacker-scripts\Windows
 Я не проверял совместимость кода и использованных функций Powershell с предыдущими версиями. Вероятно для их выполнения понадобится Powershell 5.1 который идет в комплекте с Windows 10.
 
 Если вы работаете на Windows 7, 8, 8.1 то, вероятно, вам необходимо будет установить [Microsoft .NET Framework 4.8](https://support.microsoft.com/topic/microsoft-net-framework-4-8-offline-installer-for-windows-9d23f658-3b97-68ab-d013-aa3c3e7495e0) и [Powershell 5.1](https://www.microsoft.com/download/details.aspx/?id=54616) чтобы код из этого репозитория у вас работал.
+
+### На macOS:
+- todo
 
 ### На Linux:
 - todo
