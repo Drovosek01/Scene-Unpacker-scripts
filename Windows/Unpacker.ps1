@@ -658,8 +658,39 @@ function HandleInternalsRelease {
         [string]$folderPathWithItems
     )
     
-    $folderItems = Get-ChildItem -LiteralPath $folderPathWithItems
-    $folderFiles = Get-ChildItem -LiteralPath $folderPathWithItems -File
+    
+    # Handle a release folder nested inside the archive root.
+    # Flatten it when it contains archive files and metadata only.
+    $folderItems = @(Get-ChildItem -LiteralPath $folderPathWithItems)
+
+    if (($folderItems.Count -eq 1) -and $folderItems[0].PSIsContainer) {
+        $nestedFolder = $folderItems[0]
+        $nestedItems = @(Get-ChildItem -LiteralPath $nestedFolder.FullName)
+        $nestedFiles = @($nestedItems | Where-Object { -not $_.PSIsContainer })
+        $nestedFolders = @($nestedItems | Where-Object { $_.PSIsContainer })
+
+        $nestedArchives = @($nestedFiles | Where-Object {
+            $_.Extension -in $archivesFilesExtensions -or
+            $_.Name -match '\.(part0*1\.rar|zip\.0*1|7z\.0*1)$' -or
+            $_.Name -match '\.r\d+$' -or
+            $_.Name -match '\.z\d+$'
+        })
+
+        # Do not flatten folders that contain other directories.
+        if (($nestedFolders.Count -eq 0) -and ($nestedArchives.Count -gt 0)) {
+            Write-Host "Found nested release folder: $($nestedFolder.Name)"
+            Write-Host "Moving its contents to the release root"
+
+            Get-ChildItem -LiteralPath $nestedFolder.FullName |
+                Move-Item -Destination $folderPathWithItems -Force
+
+            Remove-Item -LiteralPath $nestedFolder.FullName -Force
+        }
+    }
+
+    $folderItems = @(Get-ChildItem -LiteralPath $folderPathWithItems)
+    $folderFiles = @(Get-ChildItem -LiteralPath $folderPathWithItems -File)
+
     $filteredItems = $folderItems | Where-Object { 
         -not ($_.Extension -in $metadataFilesExtensions)
     }
